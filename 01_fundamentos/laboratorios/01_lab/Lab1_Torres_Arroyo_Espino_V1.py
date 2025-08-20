@@ -1,5 +1,7 @@
 # %%
-
+"""
+Lab1_Torres_Arroyo_Espino_V1.py  
+"""
 import numpy as np
 
 class Neurona:
