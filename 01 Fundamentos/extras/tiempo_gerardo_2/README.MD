@@ -1,3 +1,6 @@
+Es el tiempo para que te hable tu ex pipipi.
+
+
 Defínela como **mixtura** en \([0,\infty)\) de una normal truncada en 0 y una ley de cola (Weibull o Pareto):
 
 \[
