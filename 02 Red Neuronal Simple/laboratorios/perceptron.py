@@ -1,15 +1,28 @@
 # %%
 import numpy as np
 from matplotlib.widgets import Slider
+import matplotlib
 import matplotlib.pyplot as plt
 
 class Perceptron:
     def __init__(self, S, T, weights=None, bias=None, learning_rate=0.01,
                  n_iter=1000, umbral=0.5):
-        
-        self.S = S
-        self.T = T
-        self.weights = weights
+        """Inicializar el perceptrón con los parámetros dados.
+        Args:
+            S (np.ndarray): Matriz de características de entrada (n_samples, n_features).
+            T (np.ndarray): Vector de etiquetas objetivo (n_samples,).
+            weights (np.ndarray, optional): Pesos iniciales del perceptrón. Si es None, se inicializan a cero.
+            bias (float, optional): Sesgo inicial del perceptrón. Si es None, se inicializa a cero.
+            learning_rate (float, optional): Tasa de aprendizaje para la actualización de pesos. Default es 0.01.
+            n_iter (int, optional): Número máximo de iteraciones para el entrenamiento. Default es 1000.
+            umbral (float, optional): Umbral para la función de activación. Default es 0.5.
+        Returns:
+            None
+        """
+
+        self.S = np.array(S)
+        self.T = np.array(T)
+        self.weights = np.array(weights) if weights is not None else None
         self.bias = bias
         self.learning_rate = learning_rate
         self.n_iter = n_iter
@@ -29,6 +42,10 @@ class Perceptron:
             return -1
 
     def fit(self):
+        """Entrenar el perceptrón usando el algoritmo de aprendizaje del perceptrón.
+        Returns:
+            self: objeto entrenado
+            """
 
         S = self.S
         T = self.T
@@ -72,9 +89,12 @@ class Perceptron:
                 break
 
         return self
-
-    # Función para graficar los datos y el hiperplano de forma interactiva
-    def plot_decision_boundary(self):
+    
+    # Función para graficar los datos y el hiperplano usando TkAgg
+    def plot(self):
+        """Graficar los datos y el hiperplano de decisión del perceptrón.
+        Utiliza la biblioteca matplotlib con el backend TkAgg para crear una gráfica interactiva"""
+        matplotlib.use('TkAgg')
         import matplotlib.pyplot as plt
 
         S = self.S
@@ -83,7 +103,7 @@ class Perceptron:
         Bi = self.Bi
 
         fig, ax = plt.subplots(figsize=(10, 6))
-        plt.subplots_adjust(bottom=0.2)
+        plt.subplots_adjust(bottom=0.25)
 
         ax.scatter(S[:, 0], S[:, 1], c=T, cmap='bwr', edgecolors='k')
 
@@ -91,7 +111,11 @@ class Perceptron:
         y_min, y_max = S[:, 1].min() - 1, S[:, 1].max() + 1
 
         xx, yy = np.meshgrid(np.linspace(x_min, x_max, 100),
-                             np.linspace(y_min, y_max, 100))
+                                np.linspace(y_min, y_max, 100))
+
+        # Texto para mostrar Wi y Bi
+        wi_text = fig.text(0.15, 0.01, '', fontsize=10)
+        bi_text = fig.text(0.55, 0.01, '', fontsize=10)
 
         def plot_boundary(epoch):
             ax.clear()
@@ -113,7 +137,7 @@ class Perceptron:
             if weights[1] != 0:
                 ax.plot([x_min, x_max],
                         [(-bias - weights[0] * x_min) / weights[1],
-                         (-bias - weights[0] * x_max) / weights[1]],
+                            (-bias - weights[0] * x_max) / weights[1]],
                         color='k', linestyle='--')
             ax.contourf(xx, yy, Z, alpha=0.3, cmap='bwr')
             ax.set_xlabel('Feature 1')
@@ -121,47 +145,21 @@ class Perceptron:
             ax.set_title(f'Perceptron Decision Boundary - Epoch {epoch+1}/{len(Wi)}')
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
+
+            # Mostrar Wi y Bi
+            wi_text.set_text(f'Wi: {np.round(weights, 3)}')
+            bi_text.set_text(f'Bi: {np.round(bias, 3)}')
+
             fig.canvas.draw_idle()
 
         # Slider
-        ax_epoch = plt.axes([0.2, 0.05, 0.6, 0.03])
+        ax_epoch = plt.axes([0.2, 0.08, 0.6, 0.03])
         slider = Slider(ax_epoch, 'Epoch', 1, max(1, len(Wi)), valinit=1, valstep=1)
-
-        def update(val):
-            plot_boundary(int(slider.val) - 1)
 
         def update(_):
             plot_boundary(int(slider.val) - 1)
 
         slider.on_changed(update)
         plot_boundary(0)
-        plt.show()
-# Datos de entrada 
-S = np.array([[1, 3],
-            [3, 3],
-            [1, 1],
-            [3, 1],
-            [-2, -1],
-            [-1, -2]])
-
-T = np.array([1, -1, -1, -1, 1, 1])  # Salidas esperadas
-
-# Crear y entrenar el perceptrón
-p = Perceptron(S, T, learning_rate=0.5, n_iter=10, umbral=0.5)
-p.fit()
-
-# Mostrar pesos y bias finales
-print("Pesos finales:", p.weights)
-print("Bias final:", p.bias)
-
-# Probar el perceptrón con los mismos datos de entrada
-for si in S:
-    jane = np.dot(si, p.weights) + p.bias
-    y = p._activation_function(jane)
-    print(f"Entrada: {si}, Salida: {y}")
-
-p.plot_decision_boundary()
-
-# %%
-
-# %%
+        plt.ion()
+        plt.show(block=True)
