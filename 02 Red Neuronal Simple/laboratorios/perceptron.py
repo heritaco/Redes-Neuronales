@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 class Perceptron:
     def __init__(self, S, T, weights=None, bias=None, learning_rate=0.01,
-                 n_iter=1000, umbral=0.5):
+                 epochs=1000, umbral=0.5):
         """Inicializar el perceptrón con los parámetros dados.
         Args:
             S (np.ndarray): Matriz de características de entrada (n_samples, n_features).
@@ -14,7 +14,7 @@ class Perceptron:
             weights (np.ndarray, optional): Pesos iniciales del perceptrón. Si es None, se inicializan a cero.
             bias (float, optional): Sesgo inicial del perceptrón. Si es None, se inicializa a cero.
             learning_rate (float, optional): Tasa de aprendizaje para la actualización de pesos. Default es 0.01.
-            n_iter (int, optional): Número máximo de iteraciones para el entrenamiento. Default es 1000.
+            epochs (int, optional): Número máximo de épocas para el entrenamiento. Default es 1000.
             umbral (float, optional): Umbral para la función de activación. Default es 0.5.
         Returns:
             None
@@ -25,13 +25,34 @@ class Perceptron:
         self.weights = np.array(weights) if weights is not None else None
         self.bias = bias
         self.learning_rate = learning_rate
-        self.n_iter = n_iter
+        self.epochs = epochs
         self.umbral = umbral
         
+        # Historial de pesos, bias, MSE y patrones mal clasificados
         self.Wi = []
         self.Bi = []
         self.MSEi = []
         self.Malos = []
+
+    # getters
+    def get_weights(self):
+        return self.Wi
+
+    def get_bias(self):
+        return self.Bi
+
+    def get_mse(self):
+        return self.MSEi
+
+    def get_malos(self):
+        """
+        Lista de long. = #épocas; cada elemento es una lista de dicts:
+        {"coords": np.ndarray,
+         "target": float,
+          "valor": float,
+              "y": float}
+        """
+        return self.Malos
 
     def _activation_function(self, jane):
         if jane > self.umbral:
@@ -54,13 +75,14 @@ class Perceptron:
 
         # Inicializar pesos y bias
         if self.weights is None:
-            self.weights = np.zeros(n_features)
+            self.weights = np.zeros(n_features, dtype=float)
         if self.bias is None:
-            self.bias = 0
+            self.bias = 0.0
 
         # Step 1. While stopping condition false
-        while self.n_iter:
+        while self.epochs:
             # Step 2. For each training pair (s : t)
+            epoch_malos = []
             for si, ti in zip(S, T):
                 # Step 3. Set activations of input units
                 # Step 4. Compute response of output unit
@@ -73,18 +95,25 @@ class Perceptron:
                 #Step 5. Update weights and bias if an error occurred for this pattern. 
                 # If y ̸= t:
                 if y != ti:
+                    epoch_malos.append({
+                        "coords": si,
+                        "target": ti,
+                        "valor": jane,
+                        "y": float(y)
+                    })
                     self.weights = self.weights + self.learning_rate * ti * si
                     self.bias = self.bias + self.learning_rate * ti
+
 
                 # Almacenar el historial
                 self.Wi.append(self.weights.copy())
                 self.Bi.append(self.bias)
                 self.MSEi.append((ti - y)**2)
-                if y != ti:
-                    self.Malos.append((si, ti, jane, y))
+                self.Malos.append(epoch_malos)
+
 
             # Step 6. Test stopping condition:
-            self.n_iter -= 1
+            self.epochs -= 1
             if not np.any(self.weights != weights_old) and self.bias == bias_old:
                 break
 
@@ -140,9 +169,9 @@ class Perceptron:
                             (-bias - weights[0] * x_max) / weights[1]],
                         color='k', linestyle='--')
             ax.contourf(xx, yy, Z, alpha=0.3, cmap='bwr')
-            ax.set_xlabel('Feature 1')
-            ax.set_ylabel('Feature 2')
-            ax.set_title(f'Perceptron Decision Boundary - Epoch {epoch+1}/{len(Wi)}')
+            ax.set_xlabel('Variable 1')
+            ax.set_ylabel('Variable 2')
+            ax.set_title(f'Perceptrón \n Época: {epoch+1}/{len(Wi)}, Pesos: {np.round(weights, 3)}, Bias: {np.round(bias, 3)}, Malos: {len(self.Malos)}, MSE: {np.round(self.MSEi[epoch], 3)}')
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
 
@@ -154,7 +183,7 @@ class Perceptron:
 
         # Slider
         ax_epoch = plt.axes([0.2, 0.08, 0.6, 0.03])
-        slider = Slider(ax_epoch, 'Epoch', 1, max(1, len(Wi)), valinit=1, valstep=1)
+        slider = Slider(ax_epoch, 'Época', 1, max(1, len(Wi)), valinit=1, valstep=1)
 
         def update(_):
             plot_boundary(int(slider.val) - 1)
