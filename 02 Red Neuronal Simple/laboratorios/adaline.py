@@ -71,7 +71,7 @@ class ADALINE:
             for si, ti in zip(S, T):
                 # Step 3. Set activations of input units
                 # Step 4. Compute response of output unit
-                jane = np.dot(si, self.weights) + self.bias
+                jane = si @ self.weights + self.bias
                 y = self._activation_function(jane)
 
                 weights_old = self.weights.copy()
