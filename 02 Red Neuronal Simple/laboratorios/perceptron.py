@@ -1,4 +1,3 @@
-# %%
 import numpy as np
 from matplotlib.widgets import Slider
 import matplotlib
@@ -97,8 +96,8 @@ class Perceptron:
                 if y != ti:
                     epoch_malos.append({
                         "coords": si,
-                        "target": ti,
-                        "valor": jane,
+                        "target": int(ti),
+                        "valor": float(jane),
                         "y": float(y)
                     })
                     self.weights = self.weights + self.learning_rate * ti * si
@@ -134,29 +133,26 @@ class Perceptron:
         fig, ax = plt.subplots(figsize=(10, 6))
         plt.subplots_adjust(bottom=0.25)
 
-        ax.scatter(S[:, 0], S[:, 1], c=T, cmap='bwr', edgecolors='k')
+        ax.scatter(S[:, 0], S[:, 1], c=T, edgecolors='w', cmap='bwr')
 
+        # Crear malla para el fondo
         x_min, x_max = S[:, 0].min() - 1, S[:, 0].max() + 1
         y_min, y_max = S[:, 1].min() - 1, S[:, 1].max() + 1
 
+        # Meshgrid es una función que genera una cuadrícula a partir de dos vectores de coordenadas
         xx, yy = np.meshgrid(np.linspace(x_min, x_max, 100),
                                 np.linspace(y_min, y_max, 100))
 
-        # Texto para mostrar Wi y Bi
-        wi_text = fig.text(0.15, 0.01, '', fontsize=10)
-        bi_text = fig.text(0.55, 0.01, '', fontsize=10)
-
         def plot_boundary(epoch):
             ax.clear()
-            ax.scatter(S[:, 0], S[:, 1], c=T, cmap='bwr', edgecolors='k')
-            if epoch < len(Wi):
-                weights = Wi[epoch]
-                bias = Bi[epoch]
-            else:
-                weights = self.weights
-                bias = self.bias
+            ax.scatter(S[:, 0], S[:, 1], c=T, edgecolors='w', cmap='bwr')
 
+            weights = Wi[epoch]
+            bias = Bi[epoch]
+
+            # Z es la matriz que contiene las predicciones para cada punto en la cuadrícula
             Z = np.zeros(xx.shape)
+            
             for i in range(xx.shape[0]):
                 for j in range(xx.shape[1]):
                     jane = np.dot([xx[i, j], yy[i, j]], weights) + bias
@@ -174,10 +170,6 @@ class Perceptron:
             ax.set_title(f'Perceptrón \n Época: {epoch+1}/{len(Wi)}, Pesos: {np.round(weights, 3)}, Bias: {np.round(bias, 3)}, Malos: {len(self.Malos)}, MSE: {np.round(self.MSEi[epoch], 3)}')
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
-
-            # Mostrar Wi y Bi
-            wi_text.set_text(f'Wi: {np.round(weights, 3)}')
-            bi_text.set_text(f'Bi: {np.round(bias, 3)}')
 
             fig.canvas.draw_idle()
 

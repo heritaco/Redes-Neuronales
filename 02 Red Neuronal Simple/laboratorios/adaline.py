@@ -16,10 +16,31 @@ class ADALINE:
         self.umbral = umbral
         self.tolerance = tolerance
 
+        # Historial de pesos, bias, MSE y patrones mal clasificados
         self.Wi = []
         self.Bi = []
         self.MSEi = []
         self.Malos = []
+
+    # getters
+    def get_weights(self):
+        return self.Wi
+    
+    def get_bias(self):
+        return self.Bi
+    
+    def get_mse(self):
+        return self.MSEi
+    
+    def get_malos(self):
+        """
+        Lista de long. = #épocas; cada elemento es una lista de dicts:
+        {"coords": np.ndarray,
+         "target": float,
+          "valor": float,
+              "y": float}
+        """
+        return self.Malos
 
     def _activation_function(self, jane):
         if jane > self.umbral:
@@ -42,15 +63,11 @@ class ADALINE:
         if self.bias is None:
             self.bias = 0
 
-        # Listas para almacenar el historial de pesos, bias, MSE y patrones mal clasificados
-        Wi = []
-        Bi = []
-        MSEi = []
-        Malos = []
 
         # Step 1. While stopping condition false
         while self.epochs:
             # Step 2. For each training pair (s : t)
+            epoch_malos = []
             for si, ti in zip(S, T):
                 # Step 3. Set activations of input units
                 # Step 4. Compute response of output unit
@@ -63,15 +80,20 @@ class ADALINE:
                 #Step 5. Update weights and bias if an error occurred for this pattern. 
                 # If y ̸= t:
                 if y != ti:
+                    epoch_malos.append({
+                        "coords": si,
+                        "target": int(ti),
+                        "valor": float(jane),
+                        "y": float(y)
+                    })
                     self.weights = self.weights + self.learning_rate * (ti - y) * si
                     self.bias = self.bias + self.learning_rate * (ti - y)
 
                 # Almacenar el historial
-                Wi.append(self.weights.copy())
-                Bi.append(self.bias)
-                MSEi.append((ti - y)**2)
-                if y != ti:
-                    Malos.append((si, ti, jane, y))
+                self.Wi.append(self.weights.copy())
+                self.Bi.append(self.bias)
+                self.MSEi.append((ti - y)**2)
+                self.Malos.append(epoch_malos)
 
             # Step 6. Test stopping condition:
             self.epochs -= 1
