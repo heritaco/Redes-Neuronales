@@ -93,7 +93,7 @@ class ADALINE:
                 self.Wi.append(self.weights.copy())
                 self.Bi.append(self.bias)
                 self.MSEi.append((ti - y)**2)
-                self.Malos.append(epoch_malos)
+            self.Malos.append(epoch_malos)
 
             # Step 6. Test stopping condition:
             self.epochs -= 1
