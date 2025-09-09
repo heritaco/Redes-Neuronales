@@ -3,6 +3,8 @@ from matplotlib.widgets import Slider
 import matplotlib
 import matplotlib.pyplot as plt
 
+import numpy as np
+
 class Perceptron:
     def __init__(self, S, T, weights=None, bias=None, learning_rate=0.01,
                  epochs=1000, umbral=0.5):
@@ -79,7 +81,7 @@ class Perceptron:
             self.bias = 0.0
 
         # Step 1. While stopping condition false
-        while self.epochs:
+        while self.epochs > 0:
             # Step 2. For each training pair (s : t)
             epoch_malos = []
             for si, ti in zip(S, T):
@@ -87,6 +89,7 @@ class Perceptron:
                 # Step 4. Compute response of output unit
                 jane = si @ self.weights + self.bias
                 y = self._activation_function(jane)
+                print(f"jane: {jane}, y: {y}, target: {ti}")
 
                 weights_old = self.weights.copy()
                 bias_old = self.bias
@@ -108,8 +111,8 @@ class Perceptron:
                 self.Wi.append(self.weights.copy())
                 self.Bi.append(self.bias)
                 self.MSEi.append((ti - y)**2)
-                self.Malos.append(epoch_malos)
-
+            
+            self.Malos.append(epoch_malos)
 
             # Step 6. Test stopping condition:
             self.epochs -= 1
@@ -117,6 +120,7 @@ class Perceptron:
                 break
 
         return self
+    
     
     # Función para graficar los datos y el hiperplano usando TkAgg
     def plot(self):
@@ -167,7 +171,7 @@ class Perceptron:
             ax.contourf(xx, yy, Z, alpha=0.3, cmap='bwr')
             ax.set_xlabel('Variable 1')
             ax.set_ylabel('Variable 2')
-            ax.set_title(f'Perceptrón \n Época: {epoch+1}/{len(Wi)}, Pesos: {np.round(weights, 3)}, Bias: {np.round(bias, 3)}, Malos: {len(self.Malos)}, MSE: {np.round(self.MSEi[epoch], 3)}')
+            ax.set_title(f'Perceptrón \n Época: {epoch+1}/{len(Wi)}, Pesos: {np.round(weights, 3)}, Bias: {np.round(bias, 3)}, Malos: {self.num_malos[epoch]}')
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
 
@@ -175,7 +179,7 @@ class Perceptron:
 
         # Slider
         ax_epoch = plt.axes([0.2, 0.08, 0.6, 0.03])
-        slider = Slider(ax_epoch, 'Época', 1, max(1, len(Wi)), valinit=1, valstep=1)
+        slider = Slider(ax_epoch, 'Época', 1, self.epochs, valinit=1, valstep=1)
 
         def update(_):
             plot_boundary(int(slider.val) - 1)
