@@ -3,10 +3,24 @@ from matplotlib.widgets import Slider
 import matplotlib
 import matplotlib.pyplot as plt
 
-class ADALINE:
+import numpy as np
+
+class Adaline:
     def __init__(self, S, T, weights=None, bias=None, learning_rate=0.01,
-                 epochs=1000, umbral=0.5, tolerance=1e-9):
-        
+                 epochs=1000, umbral=0.5, tolerance=1e-16):
+        """Inicializar el perceptrón con los parámetros dados.
+        Args:
+            S (np.ndarray): Matriz de características de entrada (n_samples, n_features).
+            T (np.ndarray): Vector de etiquetas objetivo (n_samples,).
+            weights (np.ndarray, optional): Pesos iniciales del perceptrón. Si es None, se inicializan a cero.
+            bias (float, optional): Sesgo inicial del perceptrón. Si es None, se inicializa a cero.
+            learning_rate (float, optional): Tasa de aprendizaje para la actualización de pesos. Default es 0.01.
+            epochs (int, optional): Número máximo de épocas para el entrenamiento. Default es 1000.
+            umbral (float, optional): Umbral para la función de activación. Default es 0.5.
+        Returns:
+            None
+        """
+
         self.S = np.array(S)
         self.T = np.array(T)
         self.weights = np.array(weights) if weights is not None else None
@@ -15,23 +29,21 @@ class ADALINE:
         self.epochs = epochs
         self.umbral = umbral
         self.tolerance = tolerance
-
-        # Historial de pesos, bias, MSE y patrones mal clasificados
+        
+        # Historial de pesos, bias y patrones mal clasificados
         self.Wi = []
         self.Bi = []
-        self.MSEi = []
         self.Malos = []
+        self.Malos_por_iteracion = []
 
     # getters
     def get_weights(self):
         return self.Wi
-    
+
     def get_bias(self):
         return self.Bi
-    
-    def get_mse(self):
-        return self.MSEi
-    
+
+
     def get_malos(self):
         """
         Lista de long. = #épocas; cada elemento es una lista de dicts:
@@ -41,6 +53,9 @@ class ADALINE:
               "y": float}
         """
         return self.Malos
+    
+    def get_malos_por_iteracion(self):
+        return self.Malos_por_iteracion
 
     def _activation_function(self, jane):
         if jane > self.umbral:
@@ -50,7 +65,29 @@ class ADALINE:
         else:
             return -1
 
+    def evaluar_malos_por_iteracion(self):
+        """Evaluar el número de patrones mal clasificados en el conjunto de datos.
+        Returns:
+            int: Número de patrones mal clasificados.
+        """
+        S = self.S
+        T = self.T
+        malos = 0
+
+        for si, ti in zip(S, T):
+            jane = si @ self.weights + self.bias
+            y = self._activation_function(jane)
+            if y != ti:
+                malos += 1
+
+        return malos
+
+        
     def fit(self):
+        """Entrenar el perceptrón usando el algoritmo de aprendizaje del perceptrón.
+        Returns:
+            self: objeto entrenado
+            """
 
         S = self.S
         T = self.T
@@ -59,13 +96,12 @@ class ADALINE:
 
         # Inicializar pesos y bias
         if self.weights is None:
-            self.weights = np.zeros(n_features)
+            self.weights = np.zeros(n_features, dtype=float)
         if self.bias is None:
-            self.bias = 0
-
+            self.bias = 0.0
 
         # Step 1. While stopping condition false
-        while self.epochs:
+        while self.epochs > 0:
             # Step 2. For each training pair (s : t)
             epoch_malos = []
             for si, ti in zip(S, T):
@@ -86,21 +122,26 @@ class ADALINE:
                         "valor": float(jane),
                         "y": float(y)
                     })
-                    self.weights = self.weights + self.learning_rate * (ti - y) * si
-                    self.bias = self.bias + self.learning_rate * (ti - y)
+                    self.weights = self.weights + self.learning_rate * (ti-y) * si
+                    self.bias = self.bias + self.learning_rate * (ti-y)
+
 
                 # Almacenar el historial
                 self.Wi.append(self.weights.copy())
                 self.Bi.append(self.bias)
-                self.MSEi.append((ti - y)**2)
-            self.Malos.append(epoch_malos)
+
+                self.Malos.append(epoch_malos)
+
+                malos_count = self.evaluar_malos_por_iteracion()
+                self.Malos_por_iteracion.append(malos_count)
 
             # Step 6. Test stopping condition:
             self.epochs -= 1
             if np.all(np.abs(self.weights - weights_old) < self.tolerance) and abs(self.bias - bias_old) < self.tolerance:
                 break
-
+            
         return self
+    
     
     # Función para graficar los datos y el hiperplano usando TkAgg
     def plot(self):
@@ -113,33 +154,34 @@ class ADALINE:
         T = self.T
         Wi = self.Wi
         Bi = self.Bi
+        numero_malos = self.Malos_por_iteracion
+
+        iteraciones = len(Wi)
+        epocas = int(iteraciones / len(S))
 
         fig, ax = plt.subplots(figsize=(10, 6))
         plt.subplots_adjust(bottom=0.25)
 
-        ax.scatter(S[:, 0], S[:, 1], c=T, cmap='bwr', edgecolors='k')
+        ax.scatter(S[:, 0], S[:, 1], c=T, edgecolors='w', cmap='bwr')
 
+        # Crear malla para el fondo
         x_min, x_max = S[:, 0].min() - 1, S[:, 0].max() + 1
         y_min, y_max = S[:, 1].min() - 1, S[:, 1].max() + 1
 
+        # Meshgrid es una función que genera una cuadrícula a partir de dos vectores de coordenadas
         xx, yy = np.meshgrid(np.linspace(x_min, x_max, 100),
                                 np.linspace(y_min, y_max, 100))
 
-        # Texto para mostrar Wi y Bi
-        wi_text = fig.text(0.15, 0.01, '', fontsize=10)
-        bi_text = fig.text(0.55, 0.01, '', fontsize=10)
-
         def plot_boundary(epoch):
             ax.clear()
-            ax.scatter(S[:, 0], S[:, 1], c=T, cmap='bwr', edgecolors='k')
-            if epoch < len(Wi):
-                weights = Wi[epoch]
-                bias = Bi[epoch]
-            else:
-                weights = self.weights
-                bias = self.bias
+            ax.scatter(S[:, 0], S[:, 1], c=T, edgecolors='w', cmap='bwr')
 
+            weights = Wi[epoch]
+            bias = Bi[epoch]
+
+            # Z es la matriz que contiene las predicciones para cada punto en la cuadrícula
             Z = np.zeros(xx.shape)
+            
             for i in range(xx.shape[0]):
                 for j in range(xx.shape[1]):
                     jane = np.dot([xx[i, j], yy[i, j]], weights) + bias
@@ -152,21 +194,17 @@ class ADALINE:
                             (-bias - weights[0] * x_max) / weights[1]],
                         color='k', linestyle='--')
             ax.contourf(xx, yy, Z, alpha=0.3, cmap='bwr')
-            ax.set_xlabel('Feature 1')
-            ax.set_ylabel('Feature 2')
-            ax.set_title(f'Perceptron Decision Boundary - Epoch {epoch+1}/{len(Wi)}')
+            ax.set_xlabel('Variable 1')
+            ax.set_ylabel('Variable 2')
+            ax.set_title(f'Adaline \n Iteración: {epoch+1}/{len(Wi)}, Pesos: {np.round(weights, 3)}, Bias: {np.round(bias, 3)}, Malos: {numero_malos[epoch]}')
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
-
-            # Mostrar Wi y Bi
-            wi_text.set_text(f'Wi: {np.round(weights, 3)}')
-            bi_text.set_text(f'Bi: {np.round(bias, 3)}')
 
             fig.canvas.draw_idle()
 
         # Slider
         ax_epoch = plt.axes([0.2, 0.08, 0.6, 0.03])
-        slider = Slider(ax_epoch, 'Epoch', 1, max(1, len(Wi)), valinit=1, valstep=1)
+        slider = Slider(ax_epoch, 'Iteración', 1, iteraciones, valinit=1, valstep=1)
 
         def update(_):
             plot_boundary(int(slider.val) - 1)
