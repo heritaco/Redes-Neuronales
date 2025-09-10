@@ -29,11 +29,11 @@ class Perceptron:
         self.epochs = epochs
         self.umbral = umbral
         
-        # Historial de pesos, bias, MSE y patrones mal clasificados
+        # Historial de pesos, bias y patrones mal clasificados
         self.Wi = []
         self.Bi = []
-        self.MSEi = []
         self.Malos = []
+        self.Malos_por_iteracion = []
 
     # getters
     def get_weights(self):
@@ -42,8 +42,6 @@ class Perceptron:
     def get_bias(self):
         return self.Bi
 
-    def get_mse(self):
-        return self.MSEi
 
     def get_malos(self):
         """
@@ -54,6 +52,9 @@ class Perceptron:
               "y": float}
         """
         return self.Malos
+    
+    def get_malos_por_iteracion(self):
+        return self.Malos_por_iteracion
 
     def _activation_function(self, jane):
         if jane > self.umbral:
@@ -63,6 +64,24 @@ class Perceptron:
         else:
             return -1
 
+    def evaluar_malos_por_iteracion(self):
+        """Evaluar el número de patrones mal clasificados en el conjunto de datos.
+        Returns:
+            int: Número de patrones mal clasificados.
+        """
+        S = self.S
+        T = self.T
+        malos = 0
+
+        for si, ti in zip(S, T):
+            jane = si @ self.weights + self.bias
+            y = self._activation_function(jane)
+            if y != ti:
+                malos += 1
+
+        return malos
+
+        
     def fit(self):
         """Entrenar el perceptrón usando el algoritmo de aprendizaje del perceptrón.
         Returns:
@@ -89,7 +108,6 @@ class Perceptron:
                 # Step 4. Compute response of output unit
                 jane = si @ self.weights + self.bias
                 y = self._activation_function(jane)
-                print(f"jane: {jane}, y: {y}, target: {ti}")
 
                 weights_old = self.weights.copy()
                 bias_old = self.bias
@@ -110,9 +128,11 @@ class Perceptron:
                 # Almacenar el historial
                 self.Wi.append(self.weights.copy())
                 self.Bi.append(self.bias)
-                self.MSEi.append((ti - y)**2)
-            
-            self.Malos.append(epoch_malos)
+
+                self.Malos.append(epoch_malos)
+
+                malos_count = self.evaluar_malos_por_iteracion()
+                self.Malos_por_iteracion.append(malos_count)
 
             # Step 6. Test stopping condition:
             self.epochs -= 1
@@ -133,6 +153,10 @@ class Perceptron:
         T = self.T
         Wi = self.Wi
         Bi = self.Bi
+        numero_malos = self.Malos_por_iteracion
+
+        iteraciones = len(Wi)
+        epocas = int(iteraciones / len(S))
 
         fig, ax = plt.subplots(figsize=(10, 6))
         plt.subplots_adjust(bottom=0.25)
@@ -171,7 +195,7 @@ class Perceptron:
             ax.contourf(xx, yy, Z, alpha=0.3, cmap='bwr')
             ax.set_xlabel('Variable 1')
             ax.set_ylabel('Variable 2')
-            ax.set_title(f'Perceptrón \n Época: {epoch+1}/{len(Wi)}, Pesos: {np.round(weights, 3)}, Bias: {np.round(bias, 3)}, Malos: {self.num_malos[epoch]}')
+            ax.set_title(f'Perceptrón \n Iteración: {epoch+1}/{len(Wi)}, Pesos: {np.round(weights, 3)}, Bias: {np.round(bias, 3)}, Malos: {numero_malos[epoch]}')
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
 
@@ -179,7 +203,7 @@ class Perceptron:
 
         # Slider
         ax_epoch = plt.axes([0.2, 0.08, 0.6, 0.03])
-        slider = Slider(ax_epoch, 'Época', 1, self.epochs, valinit=1, valstep=1)
+        slider = Slider(ax_epoch, 'Iteración', 1, iteraciones, valinit=1, valstep=1)
 
         def update(_):
             plot_boundary(int(slider.val) - 1)
