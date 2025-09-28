@@ -1,5 +1,15 @@
-from turtle import pd
+"""
+Custom styles for Matplotlib, Seaborn, and Plotly.
 
+Example Usage
+-------------
+>>> import style
+>>> style.mpl_apply()
+
+or
+
+>>> style.plotly_apply()
+"""
 
 def mpl_apply():
     """
