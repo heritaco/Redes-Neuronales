@@ -1,0 +1,323 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\inner}[2]{\left\langle #1,\, #2 \right\rangle}
+
+\begin{document}
+
+\title{Perceptron Convergence Theorem: A Step-by-Step Proof}
+\author{}
+\date{}
+\maketitle
+
+\paragraph{Setup.}
+Let $\mathcal{D}=\{(x_p,t_p)\}_{p=1}^P$ with $x_p\in\mathbb{R}^{d}$ augmented by a $1$ to absorb the bias, and labels $t_p\in\{+1,-1\}$. Define
+\[
+\mathcal{F}_+ := \{x_p:\ t_p=+1\},\qquad \mathcal{F}_- := \{x_p:\ t_p=-1\},
+\]
+and the transformed set $\mathcal{F} := \mathcal{F}_+ \cup \{-x:\ x\in \mathcal{F}_-\}$ whose elements all have target $+1$.
+Perceptron updates with learning rate $\eta=1$ are
+\[
+\text{if }\inner{x}{w}\le 0 \text{ then } w \leftarrow w + x,\quad \text{else no change.}
+\]
+
+\begin{theorem}[Perceptron Convergence]
+If there exists $w^\star\in\mathbb{R}^{d+1}$ such that $\inner{x}{w^\star} > 0$ for all $x\in\mathcal{F}$, then the perceptron makes a finite number of mistakes and halts. Moreover, if we scale $w^\star$ so that $\norm{w^\star}=1$, define
+\[
+m := \min_{x\in\mathcal{F}} \inner{x}{w^\star} \quad (>0),\qquad
+M := \max_{x\in\mathcal{F}} \norm{x}^2,
+\]
+then the total number of updates $K$ satisfies $K \le M/m^2$.
+\end{theorem}
+
+\begin{proof}
+We prove two inequalities: a lower bound on the projection $\inner{w_k}{w^\star}$ that grows linearly in $k$, and an upper bound on $\norm{w_k}^2$ that grows at most linearly in $k$. Combining them yields a finite mistake bound.
+
+\medskip
+\noindent\textbf{Step 1: Notation for mistake sequence.}
+Index the updates by $k=1,2,\dots$ in the order they occur. Let $x_{k-1}\in\mathcal{F}$ be the example that caused the $(k-1)$-st mistake, and let $w_k$ be the weight vector after applying that update. With $w_0=\mathbf{0}$ (WLOG), the update rule is
+\[
+w_{k} \;=\; w_{k-1} + x_{k-1}, \qquad \text{with } \inner{x_{k-1}}{w_{k-1}} \le 0.
+\]
+By unrolling,
+\[
+w_k \;=\; \sum_{i=0}^{k-1} x_i .
+\]
+
+\medskip
+\noindent\textbf{Step 2: Linear growth of the projection on $w^\star$.}
+For any mistake $x_{k-1}$ we have $\inner{x_{k-1}}{w^\star} \ge m$ by definition of $m$. Hence
+\[
+\inner{w_k}{w^\star}
+= \inner{w_{k-1} + x_{k-1}}{w^\star}
+= \inner{w_{k-1}}{w^\star} + \inner{x_{k-1}}{w^\star}
+\ge \inner{w_{k-1}}{w^\star} + m .
+\]
+By induction,
+\[
+\inner{w_k}{w^\star} \;\ge\; k\, m .
+\tag{1}
+\]
+
+\medskip
+\noindent\textbf{Step 3: Quadratic upper bound via norm growth.}
+Compute the squared norm after a mistake:
+\[
+\norm{w_k}^2
+= \norm{w_{k-1} + x_{k-1}}^2
+= \norm{w_{k-1}}^2 + 2\,\inner{x_{k-1}}{w_{k-1}} + \norm{x_{k-1}}^2
+\le \norm{w_{k-1}}^2 + \norm{x_{k-1}}^2,
+\]
+since $\inner{x_{k-1}}{w_{k-1}} \le 0$ at a mistake. Iterating and using
+$\norm{x_{i}}^2 \le M$ for all $i$ gives
+\[
+\norm{w_k}^2 \;\le\; \sum_{i=0}^{k-1} \norm{x_i}^2 \;\le\; k\, M .
+\tag{2}
+\]
+
+\medskip
+\noindent\textbf{Step 4: Combine (1) and Cauchy--Schwarz with (2).}
+By Cauchy--Schwarz,
+\[
+\inner{w_k}{w^\star} \;\le\; \norm{w_k}\,\norm{w^\star} = \norm{w_k}
+\quad\text{since }\norm{w^\star}=1.
+\]
+Together with (1) and (2),
+\[
+k\, m \;\le\; \inner{w_k}{w^\star} \;\le\; \norm{w_k} \;\le\; \sqrt{k\,M}.
+\]
+Therefore $k m \le \sqrt{k M}$, i.e. $k \le M/m^2$. Hence only finitely many mistakes occur, so the algorithm halts.
+\end{proof}
+
+\paragraph{Remarks.}
+(i) If one instead defines a margin $\gamma := \min_{p} t_p\,\inner{x_p}{\hat w^\star}$ for a unit vector $\hat w^\star$, and $R:=\max_p \norm{x_p}$, then $K \le (R/\gamma)^2$. (ii) Scaling $w^\star$ to unit norm converts $(M,m)$ to $(R^2,\gamma)$.
+
+
+
+
+
+
+
+
+
+
+
+\newpage
+\section{Concrete matrices, vectors, and an update trace}
+
+\subsection{Dataset as matrices (augmented bias)}
+Let $d=2$ features and bias absorbed by augmentation. Take four separable points:
+\[
+\tilde x_1=\begin{bmatrix}2\\2\\1\end{bmatrix},\quad
+\tilde x_2=\begin{bmatrix}3\\1\\1\end{bmatrix},\quad
+\tilde x_3=\begin{bmatrix}-1\\-2\\1\end{bmatrix},\quad
+\tilde x_4=\begin{bmatrix}-2\\-1\\1\end{bmatrix},\qquad
+y=\begin{bmatrix}+1\\+1\\-1\\-1\end{bmatrix}.
+\]
+Row-stacked “design” matrix:
+\[
+X_{\text{rows}}
+=
+\begin{bmatrix}
+2&2&1\\
+3&1&1\\
+-1&-2&1\\
+-2&-1&1
+\end{bmatrix}\in\mathbb{R}^{4\times 3},
+\quad\text{where row }p\text{ equals }\tilde x_p^\top.
+\]
+Column-stacked view (useful algebraically):
+\[
+X_{\text{cols}}=\begin{bmatrix}\tilde x_1&\tilde x_2&\tilde x_3&\tilde x_4\end{bmatrix}\in\mathbb{R}^{3\times 4}.
+\]
+
+\paragraph{Standard perceptron update (labeled form).}
+With labels $y_p\in\{\pm1\}$ and $w\in\mathbb{R}^{3}$,
+\[
+\text{if }y_p\,\langle w,\tilde x_p\rangle \le 0\quad\Longrightarrow\quad
+w\leftarrow w + y_p\,\tilde x_p.
+\]
+Equivalently, over a sequence of mistakes at indices $p_0,\dots,p_{k-1}$,
+\[
+w_k=\sum_{i=0}^{k-1} y_{p_i}\,\tilde x_{p_i}
+\quad\text{(so }w_k=X_{\text{cols}}\,\alpha_k\text{ for some }\alpha_k\in\mathbb{N}_0^{4}\text{ counting mistakes per example).}
+\]
+
+\subsection{Transformed set $\mathcal{F}$ used in the proof}
+Flip the negatives so every element has target $+1$:
+\[
+\mathcal{F}=\Big\{\tilde x_1,\ \tilde x_2,\ -\tilde x_3=\begin{bmatrix}1\\2\\-1\end{bmatrix},\ -\tilde x_4=\begin{bmatrix}2\\1\\-1\end{bmatrix}\Big\}.
+\]
+In this view the update is: if $\langle w,x\rangle\le 0$ for some $x\in\mathcal{F}$ then $w\leftarrow w+x$.
+
+\subsection{A full pass: explicit mistake trace}
+Initialize $w_0=\mathbf{0}$. Present the four examples in order $(1,2,3,4)$.
+\[
+\begin{array}{ll}
+\textbf{Step 1 (}p=1\textbf{):} & y_1\,\langle w_0,\tilde x_1\rangle=0\le 0\Rightarrow
+w_1=w_0+y_1\tilde x_1=\begin{bmatrix}2\\2\\1\end{bmatrix}.\\[6pt]
+\textbf{Step 2 (}p=2\textbf{):} & y_2\,\langle w_1,\tilde x_2\rangle
+= (+1)\,(2\cdot 3+2\cdot 1+1\cdot 1)=9>0\Rightarrow w_2=w_1.\\[6pt]
+\textbf{Step 3 (}p=3\textbf{):} & y_3\,\langle w_2,\tilde x_3\rangle
+= (-1)\,(2\cdot(-1)+2\cdot(-2)+1\cdot 1)=(-1)\,(-5)=5>0\Rightarrow w_3=w_2.\\[6pt]
+\textbf{Step 4 (}p=4\textbf{):} & y_4\,\langle w_3,\tilde x_4\rangle
+= (-1)\,(2\cdot(-2)+2\cdot(-1)+1\cdot 1)=(-1)\,(-5)=5>0\Rightarrow w_4=w_3.\\[6pt]
+\end{array}
+\]
+All points are correctly classified after a single update: $K=1$.
+
+\subsection{A separating hyperplane and the numeric bound}
+A simple separator is $w^\star=(1,1,-1)$. For all $p$,
+\[
+y_p\,\langle w^\star,\tilde x_p\rangle\in\{3,4\}>0
+\quad\Rightarrow\quad\text{separable.}
+\]
+Margin form: set $\hat w^\star=w^\star/\|w^\star\|$ with $\|w^\star\|=\sqrt{3}$ and
+\[
+\gamma:=\min_p y_p\,\langle \hat w^\star,\tilde x_p\rangle=\frac{3}{\sqrt{3}}=\sqrt{3}.
+\]
+Radius $R:=\max_p\|\tilde x_p\|=\sqrt{11}$. Hence the classic bound
+\[
+K\ \le\ \left(\frac{R}{\gamma}\right)^2\ =\ \frac{11}{3}\ <\ 4,
+\]
+consistent with the observed $K=1$.
+
+\subsection{Same example without augmentation (separate bias)}
+Let $x_p\in\mathbb{R}^2$, $w\in\mathbb{R}^2$, $b\in\mathbb{R}$. Update
+\[
+\text{if }y_p\,(w^\top x_p+b)\le 0\ \Longrightarrow\
+\begin{cases}
+w\leftarrow w + y_p\,x_p,\\
+b\leftarrow b + y_p.
+\end{cases}
+\]
+This is algebraically identical to the augmented rule via $\tilde x_p=(x_p,1)$ and $\tilde w=(w,b)$.
+
+\paragraph{Geometric intuition.}
+Each mistake adds a vector pointing ``toward correctness'':
+$w_{k+1}=w_k+y_p\tilde x_p$ increases the projection $\langle w_{k+1},\hat w^\star\rangle$ by at least $\gamma$, while $\|w_{k+1}\|$ grows at most by $\|\tilde x_p\|\le R$. Linear growth below and sublinear growth above force a finite $K$.
+
+
+
+
+
+\newpage
+\section{Kessler's construction for multiclass perceptron}
+
+\subsection{Setup and Kessler lift}
+Let $K\ge 2$ classes, augmented inputs $\tilde x\in\mathbb{R}^{d+1}$, labels $y\in\{1,\dots,K\}$. Collect class weights as a matrix $W\in\mathbb{R}^{K\times(d+1)}$ with rows $w_c^\top$. Prediction is
+\[
+\hat y(\tilde x)=\arg\max_{c\in[K]} \langle w_c,\tilde x\rangle.
+\]
+\textbf{Multiclass separability with margin.} There exists $W^\star$ and $\gamma>0$ such that for all $(\tilde x,y)$ and all $j\ne y$,
+\[
+\langle w^\star_y-w^\star_j,\tilde x\rangle\ \ge\ \gamma,
+\qquad
+R:=\max_{(\tilde x, y)} \|\tilde x\|<\infty.
+\tag{$\diamondsuit$}
+\]
+
+\paragraph{Kessler lift.}
+Define the block embedding $\Phi:\mathbb{R}^{d+1}\times[K]\to\mathbb{R}^{K(d+1)}$ by
+\[
+\Phi(\tilde x,y)=\underbrace{(0,\dots,0)}_{(y-1)\text{ blocks}},\ \tilde x,\ \underbrace{(0,\dots,0)}_{(K-y)\text{ blocks}},
+\]
+and the contrast vector
+\[
+\Delta\Phi(\tilde x,y,j)\ :=\ \Phi(\tilde x,y)-\Phi(\tilde x,j),\qquad j\ne y.
+\]
+Vectorize $W$ as $v:=\operatorname{vec}(W)\in\mathbb{R}^{K(d+1)}$ so that $\langle v,\Phi(\tilde x,c)\rangle=\langle w_c,\tilde x\rangle$. Then the margin constraints $(\diamondsuit)$ are equivalent to
+\[
+\langle v^\star,\Delta\Phi(\tilde x,y,j)\rangle\ \ge\ \gamma \quad \forall j\ne y.
+\]
+Note $\|\Delta\Phi(\tilde x,y,j)\|^2=\|\tilde x\|^2+\|\tilde x\|^2=2\|\tilde x\|^2\le 2R^2$.
+
+\subsection{Multiclass perceptron as binary perceptron in the lifted space}
+Given an example $(\tilde x,y)$, let $j=\arg\max_{c\ne y}\langle w_c,\tilde x\rangle$ be the most offending rival. On mistake ($\langle w_y,\tilde x\rangle\le\langle w_j,\tilde x\rangle$) perform
+\[
+W_y\leftarrow W_y+\tilde x,\qquad W_j\leftarrow W_j-\tilde x
+\quad\Longleftrightarrow\quad
+v\leftarrow v+\Delta\Phi(\tilde x,y,j).
+\]
+Thus the multiclass update equals a standard perceptron update on the lifted, always-positive “examples” $\Delta\Phi(\tilde x,y,j)$.
+
+\subsection{Convergence and mistake bound}
+Under $(\diamondsuit)$, the binary perceptron proof applies verbatim in the lifted space. Let $v_0=0$ and index mistakes by $k$. Define
+\[
+m:=\min_{(\tilde x,y),\,j\ne y}\ \langle v^\star,\Delta\Phi(\tilde x,y,j)\rangle=\gamma,
+\qquad
+M:=\max_{(\tilde x,y),\,j\ne y}\ \|\Delta\Phi(\tilde x,y,j)\|^2\le 2R^2.
+\]
+Then after $K$ mistakes,
+\[
+K\ \le\ \frac{M}{m^2}\ \le\ \frac{2R^2}{\gamma^2}.
+\]
+Equivalently, with Frobenius norm, $\|W^\star\|_F=1$ without loss of generality, the standard inequalities yield
+\[
+\langle \operatorname{vec}(W_K),\operatorname{vec}(W^\star)\rangle\ \ge\ K\gamma,
+\qquad
+\|W_K\|_F^2\ \le\ K\cdot 2R^2,
+\]
+and Cauchy–Schwarz gives the same bound.
+
+\subsection{Concrete block form and a tiny trace}
+For $K=3$ and $d=2$, write $\tilde x=(x_1,x_2,1)^\top$ and
+\[
+W=
+\begin{bmatrix}
+w_{11}&w_{12}&b_1\\
+w_{21}&w_{22}&b_2\\
+w_{31}&w_{32}&b_3
+\end{bmatrix},\quad
+v=\operatorname{vec}(W)=
+\begin{bmatrix}
+w_{11}\\w_{12}\\b_1\\
+w_{21}\\w_{22}\\b_2\\
+w_{31}\\w_{32}\\b_3
+\end{bmatrix}\in\mathbb{R}^{9}.
+\]
+For $(\tilde x,y=2)$,
+\[
+\Phi(\tilde x,2)=
+\begin{bmatrix}
+0\\0\\0\\
+x_1\\x_2\\1\\
+0\\0\\0
+\end{bmatrix},\qquad
+\Delta\Phi(\tilde x,2,3)=
+\begin{bmatrix}
+0\\0\\0\\
+x_1\\x_2\\1\\
+-\,x_1\\-\,x_2\\-\,1
+\end{bmatrix}.
+\]
+Suppose one mistake occurs on $(\tilde x,y=2)$ predicted as $j=3$. Then
+\[
+W_2\leftarrow W_2+\tilde x,\quad W_3\leftarrow W_3-\tilde x,\quad W_1\ \text{unchanged}.
+\]
+Numerically, let $\tilde x=(2,1,1)^\top$. With $W=0$,
+\[
+\text{scores }(\langle w_c,\tilde x\rangle)=(0,0,0)\Rightarrow \text{tie}\to j=3,\quad
+W_2\gets (2,1,1),\ W_3\gets (-2,-1,-1).
+\]
+On the next pass a correctly labeled $(\tilde x',y=2)$ with $\tilde x'=(0,2,1)^\top$ produces scores
+\[
+(\langle w_1,\tilde x'\rangle,\ \langle w_2,\tilde x'\rangle,\ \langle w_3,\tilde x'\rangle)
+=\big(0,\ 0\cdot2+1\cdot2+1\cdot1=3,\ 0\cdot(-2)+2\cdot(-1)+1\cdot(-1)=-3\big),
+\]
+hence no update.
+
+\subsection{Geometric and intuitive reading}
+Each mistake adds the \emph{difference} between the correct and rival class blocks. In weight space this pushes $w_y$ toward $\tilde x$ and pulls $w_j$ away from $\tilde x$. The projection on the optimal separator $W^\star$ increases by at least $\gamma$ per mistake, while the Frobenius norm grows at most by $\sqrt{2}\,\|\tilde x\|$. As in the binary case, linear growth below versus sublinear growth above yields a finite mistake count bounded by $2R^2/\gamma^2$.
+
+\paragraph{Remarks.} 
+(i) The update $W_y\!\leftarrow\!W_y+\tilde x,\ W_j\!\leftarrow\!W_j-\tilde x$ is identical to the structured perceptron and to the Crammer--Singer multiclass hinge in the separable limit. 
+(ii) A one-vs-rest perceptron can also be analyzed, but Kessler’s lift gives a single binary reduction with a tight $\sqrt{2}$ radius factor.
+
+\end{document}
