@@ -1,0 +1,392 @@
+\documentclass[11pt]{article}
+
+\usepackage[letterpaper,margin=0.5cm]{geometry}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{bm}
+\usepackage{enumitem}
+\usepackage{geometry}
+
+
+\setlist{nosep,leftmargin=*,itemsep=2pt,topsep=2pt}
+
+
+\usepackage{fontspec}
+\setmainfont{EB Garamond}[
+    UprightFont = * Regular,
+    ItalicFont = * Italic,
+    BoldFont = * SemiBold,
+    BoldItalicFont = * SemiBold Italic,
+]
+\usepackage{newtxmath}
+
+\usepackage{setspace}
+\setstretch{1.1}
+
+% remove number page
+\pagenumbering{gobble}
+
+% two columns
+\usepackage{multicol}
+
+% remove the indentation of the first paragraph of each section
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+\begin{document}
+\begin{multicols}{2}
+
+
+\section*{Perceptron}
+
+\textbf{Entradas:} $\bm{x}\in\mathbb{R}^n$, con componentes $x_i$.
+
+\textbf{Clases:} $m$ clases; una unidad de salida por clase $j\in\{1,\dots,m\}$.
+
+\textbf{Parámetros:} matriz de pesos $W\in\mathbb{R}^{m\times n}$, cuya fila $j$ es $w_j^\top$; vector de sesgos $b\in\mathbb{R}^m$ con componente $b_j$.
+
+\textbf{Agregado lineal:}
+\[
+y^{\text{in}}_j \;=\; b_j+\sum_{i=1}^n w_{ji}\,x_i \,.
+\]
+
+\textbf{Activación escalón con umbral $\theta\ge 0$:}
+\[
+f(y^{\text{in}}_j)=
+\begin{cases}
++1, & y^{\text{in}}_j>\theta,\\[2pt]
+0, & |y^{\text{in}}_j|\le \theta,\\[2pt]
+-1, & y^{\text{in}}_j<-\theta,
+\end{cases}
+\\
+y_j=f(y^{\text{in}}_j).
+\]
+
+\textbf{Codificación uno-vs-todos} del objetivo para un patrón de la clase $k$:
+\[
+t_j=\begin{cases}
++1,& j=k,\\
+-1,& j\neq k.
+\end{cases}
+\]
+
+\textbf{Regla de aprendizaje} (si hay error $y_j\neq t_j$):
+\[
+w_{ji}\leftarrow w_{ji}+\alpha\, t_j\, x_i,
+\\
+b_j\leftarrow b_j+\alpha\, t_j.
+\]
+
+\textbf{Decisión:} clasificación correcta si la clase verdadera $k$ produce $y_k=+1$ y todas las demás $y_{j\neq k}=-1$. En caso ambiguo, usar $\arg\max_j y^{\text{in}}_j$.
+
+\section*{Datos del ejercicio}
+
+Tres clases en $\mathbb{R}^2$ ($n=2,\ m=3$). Tasa $\alpha=1$. Umbral $\theta=0$. Inicialización $W=\mathbf{0},\ b=\mathbf{0}$.
+\[
+\begin{aligned}
+&\text{Clase 1: } \bm{x}^{(1)}=(2,2),\ \bm{x}^{(2)}=(3,0),\\
+&\text{Clase 2: } \bm{x}^{(3)}=(-2,2),\ \bm{x}^{(4)}=(-3,1),\\
+&\text{Clase 3: } \bm{x}^{(5)}=(0,-3),\ \bm{x}^{(6)}=(1,-4).
+\end{aligned}
+\]
+
+\section*{Época 1: cálculos y actualizaciones clave}
+
+Notación compacta tras cada patrón: $((w_1,w_2,w_3;\ b_1,b_2,b_3))$.
+
+\paragraph{Patrón $\bm{x}^{(1)}=(2,2)$, clase 1.}
+$y^{\text{in}}_j=0\Rightarrow y_j=0$ para $j=1,2,3$. Objetivo $t=(+1,-1,-1)$. Actualizar los tres:
+\[
+\begin{aligned}
+&w_1\leftarrow w_1+(2,2),\ \ b_1\leftarrow b_1+1,\\
+&w_2\leftarrow w_2-(2,2),\ \ b_2\leftarrow b_2-1,\\
+&w_3\leftarrow w_3-(2,2),\ \ b_3\leftarrow b_3-1.
+\end{aligned}
+\]
+Estado: $(((2,2),(-2,-2),(-2,-2);\ 1,-1,-1))$.
+
+\paragraph{Patrón $\bm{x}^{(3)}=(-2,2)$, clase 2.} Objetivo $t=(-1,+1,-1)$.
+\[
+\begin{aligned}
+&y^{\text{in}}_1=1+(-2)\cdot 2+2\cdot 2=1\Rightarrow y_1=+1\neq t_1\Rightarrow w_1\leftarrow (4,0),\ b_1\leftarrow 0,\\
+&y^{\text{in}}_2=-1+(-2)(-2)+2(-2)=-1\Rightarrow y_2=-1\neq t_2\Rightarrow w_2\leftarrow (-4,0),\ b_2\leftarrow 0,\\
+&y^{\text{in}}_3=-1+(-2)(-2)+2(-2)=-1\Rightarrow y_3=-1=t_3\ \ \text{(sin cambio)}.
+\end{aligned}
+\]
+Estado: $(((4,0),(-4,0),(-2,-2);\ 0,0,-1))$.
+
+\paragraph{Patrón $\bm{x}^{(5)}=(0,-3)$, clase 3.} Objetivo $t=(-1,-1,+1)$.
+\[
+\begin{aligned}
+&y^{\text{in}}_1=0\Rightarrow y_1=0\neq t_1\Rightarrow w_1\leftarrow (4,3),\ b_1\leftarrow -1,\\
+&y^{\text{in}}_2=0\Rightarrow y_2=0\neq t_2\Rightarrow w_2\leftarrow (-4,3),\ b_2\leftarrow -1,\\
+&y^{\text{in}}_3=-1+0\cdot(-2)+(-3)(-2)=5\Rightarrow y_3=+1=t_3.
+\end{aligned}
+\]
+Estado: $(((4,3),(-4,3),(-2,-2);\ -1,-1,-1))$.
+
+\paragraph{Patrón $\bm{x}^{(2)}=(3,0)$, clase 1.} $t=(+1,-1,-1)$.
+\[
+\begin{aligned}
+&y^{\text{in}}_1=-1+3\cdot 4=11\Rightarrow +1\ \text{ok},\\
+&y^{\text{in}}_2=-1+3(-4)=-13\Rightarrow -1\ \text{ok},\\
+&y^{\text{in}}_3=-1+3(-2)=-7\Rightarrow -1\ \text{ok}.
+\end{aligned}
+\]
+Sin cambios.
+
+\paragraph{Patrón $\bm{x}^{(4)}=(-3,1)$, clase 2.} $t=(-1,+1,-1)$.
+\[
+\begin{aligned}
+&y^{\text{in}}_1=-1+(-3)4+1\cdot 3=-10\Rightarrow -1\ \text{ok},\\
+&y^{\text{in}}_2=-1+(-3)(-4)+1\cdot 3=14\Rightarrow +1\ \text{ok},\\
+&y^{\text{in}}_3=-1+(-3)(-2)+1(-2)=3\Rightarrow +1\neq t_3\\
+&\hspace{1.3cm}\Rightarrow w_3\leftarrow (1,-3),\ b_3\leftarrow -2.
+\end{aligned}
+\]
+
+\paragraph{Patrón $\bm{x}^{(6)}=(1,-4)$, clase 3.} $t=(-1,-1,+1)$.
+\[
+\begin{aligned}
+&y^{\text{in}}_1=-1+1\cdot 4+(-4)\cdot 3=-9\Rightarrow -1\ \text{ok},\\
+&y^{\text{in}}_2=-1+1(-4)+(-4)\cdot 3=-17\Rightarrow -1\ \text{ok},\\
+&y^{\text{in}}_3=-2+1\cdot 1+(-4)(-3)=11\Rightarrow +1\ \text{ok}.
+\end{aligned}
+\]
+
+\section*{Parámetros finales tras la época 1}
+
+\[
+W=\begin{pmatrix}
+4 & 3\\
+-4 & 3\\
+1 & -3
+\end{pmatrix},
+\\
+b=\begin{pmatrix}
+-1\\
+-1\\
+-2
+\end{pmatrix}.
+\]
+Verificación rápida: los seis patrones cumplen $y_k=+1$ en su clase y $y_{j\neq k}=-1$. Converge.
+
+
+
+\newpage
+\section*{ADALINE}
+Patrones $(x_1,x_2)$ con dianas bipolares $t$:
+\[
+(1,1)\to 1,\\ (1,0)\to -1,\\ (0,1)\to -1,\\ (0,0)\to -1.
+\]
+Objetivo: minimizar
+\[
+E=\sum_{p=1}^4\bigl(y_{\text{in}}(p)-t(p)\bigr)^2,
+\\
+y_{\text{in}}=w_0+w_1x_1+w_2x_2.
+\]
+
+\section*{Regla delta (Widrow--Hoff)}
+Para cada patrón $p$:
+\[
+e=t-y_{\text{in}},\\
+w_0\leftarrow w_0+\alpha\,e,\\
+w_i\leftarrow w_i+\alpha\,e\,x_i\ \ (i=1,2).
+\]
+Durante el entrenamiento la activación es lineal.
+
+\section*{Setup}
+$\alpha=0.25$. Inicial: $w_0=w_1=w_2=0$. Orden: $(1,1),(1,0),(0,1),(0,0)$.
+
+\section*{Época 1}
+\begingroup\small
+\[
+\begin{array}{c@{\quad}c@{\quad}r@{\quad}r@{\quad}r@{\quad}l}
+\hline
+p & \bm{x} & t & y_{\text{in}} & e & (w_0,\ w_1,\ w_2)\ \text{después de actualizar}\\
+\hline
+1 & (1,1) & \phantom{-}1  & \phantom{-}0.000 & \phantom{-}1.000 & ( \phantom{-}0.250,\ \phantom{-}0.250,\ \phantom{-}0.250)\\
+2 & (1,0) & -1            & \phantom{-}0.500 & -1.500           & (-0.125,\ -0.125,\ \phantom{-}0.250)\\
+3 & (0,1) & -1            & \phantom{-}0.125 & -1.125           & (-0.406,\ -0.125,\ -0.031)\\
+4 & (0,0) & -1            & -0.406           & -0.594           & (-0.555,\ -0.125,\ -0.031)\\
+\hline
+\end{array}
+\]
+\endgroup
+
+\section*{Época 2}
+\begingroup\small
+\[
+\begin{array}{c@{\quad}c@{\quad}r@{\quad}r@{\quad}r@{\quad}l}
+\hline
+p & \bm{x} & t & y_{\text{in}} & e & (w_0,\ w_1,\ w_2)\ \text{después de actualizar}\\
+\hline
+1 & (1,1) & \phantom{-}1  & -0.711          & \phantom{-}1.711 & (-0.127,\ \phantom{-}0.303,\ \phantom{-}0.396)\\
+2 & (1,0) & -1            & \phantom{-}0.176 & -1.176           & (-0.421,\ \phantom{-}0.009,\ \phantom{-}0.396)\\
+3 & (0,1) & -1            & -0.024           & -0.976           & (-0.665,\ \phantom{-}0.009,\ \phantom{-}0.153)\\
+4 & (0,0) & -1            & -0.665           & -0.335           & (-0.749,\ \phantom{-}0.009,\ \phantom{-}0.153)\\
+\hline
+\end{array}
+\]
+\endgroup
+
+El error total $E$ cae por épocas y converge al mínimo.
+
+\section*{Óptimo por mínimos cuadrados}
+\[
+w^\star=\arg\min_{w}\sum_{p=1}^4\bigl(\phi_p^\top w-t_p\bigr)^2,
+\\
+\phi_p=\begin{bmatrix}1\\ x_1(p)\\ x_2(p)\end{bmatrix},\\
+t_p\ \text{del AND binario}\to\text{bipolar}.
+\]
+
+\noindent Construye $\Phi$ y $t$:
+\[
+\Phi=\begin{bmatrix}
+1&1&1\\
+1&1&0\\
+1&0&1\\
+1&0&0
+\end{bmatrix},
+\\
+t=\begin{bmatrix}
+1\\-1\\-1\\-1
+\end{bmatrix}.
+\]
+
+\noindent Ecuaciones normales:
+\[
+(\Phi^\top\Phi)\,w=\Phi^\top t,
+\\
+\Phi^\top\Phi=\begin{bmatrix}4&2&2\\2&2&1\\2&1&2\end{bmatrix},\\
+\Phi^\top t=\begin{bmatrix}-2\\0\\0\end{bmatrix}.
+\]
+
+\noindent Resuelve el sistema:
+\[
+\begin{cases}
+4w_0+2w_1+2w_2=-2\\
+2w_0+2w_1+w_2=0\\
+2w_0+w_1+2w_2=0
+\end{cases}
+\]
+\[
+w_1=w_2,\ \ 2w_0+3w_1=0,\ \ -6w_1+4w_1=-2
+\]
+\[
+w_1=w_2=1,\ \ w_0=-\tfrac{3}{2}.
+\]
+\[
+w^\star=\bigl(-\tfrac{3}{2},\,1,\,1\bigr),
+\\
+\text{frontera } x_1+x_2-\tfrac{3}{2}=0,
+\\
+E_{\min}=1.
+\]
+
+\section*{Verificación del óptimo}
+Con $(-1.5,1,1)$:
+\[
+\begin{aligned}
+&y_{\text{in}}(1,1)=0.5,\ \ e=0.5,\\
+&y_{\text{in}}(1,0)=-0.5,\ \ e=-0.5,\\
+&y_{\text{in}}(0,1)=-0.5,\ \ e=-0.5,\\
+&y_{\text{in}}(0,0)=-1.5,\ \ e=0.5,
+\end{aligned}
+\]
+\[
+\sum e^2=0.25+0.25+0.25+0.25=1.
+\]
+
+\section*{Lectura}
+El uso de activación lineal durante el aprendizaje y la minimización del MSE define ADALINE y su regla delta.
+
+
+
+
+\newpage
+\section*{Theodoridis}
+\begin{itemize}
+\item Vectores extendidos: $\tilde{x}_i=[x_i^\top,\,1]^\top$, $\ \tilde{w}=[w^\top,\,b]^\top$.
+\item Etiquetas $y_i\in\{-1,+1\}$ y margen $m_i=y_i\,\tilde{w}^\top \tilde{x}_i$.
+\item Conjunto de mal clasificados: $Y=\{\,i:\ m_i\le 0\,\}$.
+\item Actualización por época:
+\[
+\tilde{w}\leftarrow \tilde{w}+\alpha\sum_{i\in Y} y_i\,\tilde{x}_i.
+\]
+\item Forma de Theodoridis (equivalente cuando $m_i\le 0$):
+\[
+\delta_i=-\operatorname{sign}(\tilde{w}^\top \tilde{x}_i),
+\\
+\tilde{w}\leftarrow \tilde{w}-\alpha\sum_{i\in Y}\delta_i\,\tilde{x}_i.
+\]
+\end{itemize}
+
+\section*{Datos separables simples}
+\[
+\text{Clase }(+1):\ (2,0),\ (2,2);\\
+\text{Clase }(-1):\ (0,2),\ (-2,0).
+\]
+Extendidos:
+\[
+\tilde{x}_1=(2,0,1),\\ \tilde{x}_2=(2,2,1),\\
+\tilde{x}_3=(0,2,1),\\ \tilde{x}_4=(-2,0,1).
+\]
+Etiquetas $y=(+1,+1,-1,-1)$. Tasa $\alpha=1$. Inicial $\tilde{w}^{(0)}=(0,0,0)$.
+
+\section*{Época 0}
+Márgenes $m_i=y_i\,\tilde{w}^{(0)\top}\tilde{x}_i=0\ \Rightarrow\ Y=\{1,2,3,4\}$.
+\[
+\Delta \tilde{w}=\sum_{i\in Y} y_i\,\tilde{x}_i
+=(2,0,1)+(2,2,1)+(0,-2,-1)+(2,0,-1)=(6,0,0).
+\]
+\[
+\tilde{w}^{(1)}=(6,0,0).
+\]
+
+\section*{Época 1}
+Con $\tilde{w}^{(1)}$:
+\[
+m_1=+1\cdot(6\cdot2)=12>0,\\
+m_2=+1\cdot(6\cdot2)=12>0,\\
+\]
+\[
+m_3=-1\cdot(0)=0,\\
+m_4=-1\cdot\bigl(6\cdot(-2)\bigr)=12>0.
+\]
+$Y=\{3\}$. Entonces
+\[
+\Delta \tilde{w}=y_3\,\tilde{x}_3=-1\cdot(0,2,1)=(0,-2,-1),
+\\
+\tilde{w}^{(2)}=(6,-2,-1).
+\]
+
+\section*{Época 2}
+Con $\tilde{w}^{(2)}$:
+\[
+\begin{aligned}
+m_1&=+1\cdot(6\cdot2-2\cdot0-1)=11>0,\\
+m_2&=+1\cdot(6\cdot2-2\cdot2-1)=7>0,\\
+m_3&=-1\cdot(0-2\cdot2-1)=5>0,\\
+m_4&=-1\cdot\bigl(6\cdot(-2)-1\bigr)=13>0.
+\end{aligned}
+\]
+$Y=\varnothing$. Converge.
+
+\section*{Resultado}
+\[
+\tilde{w}^\star=(6,-2,-1)\\\Rightarrow\\
+\tilde{w}^{\star\top}\tilde{x}=0\ \Longleftrightarrow\ 6x_1-2x_2-1=0.
+\]
+Clasificador: $\operatorname{sign}(6x_1-2x_2-1)$.
+
+\paragraph{Nota de correspondencia con $\delta$.}
+Si $i\in Y$ entonces $m_i\le 0\Rightarrow \operatorname{sign}(\tilde{w}^\top\tilde{x}_i)=-y_i$ o $0$.
+Así, $\delta_i=-\operatorname{sign}(\tilde{w}^\top\tilde{x}_i)\approx y_i$ y
+\[
+\tilde{w}\leftarrow \tilde{w}-\alpha\sum_{i\in Y}\delta_i\,\tilde{x}_i
+\\\text{reduce a}\\
+\tilde{w}\leftarrow \tilde{w}+\alpha\sum_{i\in Y} y_i\,\tilde{x}_i.
+\]
+
+
+\end{multicols}
+\end{document}
