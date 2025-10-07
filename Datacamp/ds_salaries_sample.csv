@@ -1,0 +1,6 @@
+experience_level,employment_type,remote_ratio,company_size,salary_in_usd
+0,0,0.5,1,0.036
+1,0,1.0,2,0.133
+2,0,0.0,1,0.234
+1,0,1.0,0,0.076
+2,0,1.0,1,0.17
