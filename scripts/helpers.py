@@ -311,6 +311,118 @@ def extraer_colorfulness(imagen: np.ndarray) -> dict:
     }
 
 
+def skewness_1d(x: np.ndarray) -> float:
+    """
+    Calcula la asimetría (skewness) de un arreglo 1D.
+    Devuelve 0 si la varianza es ~0 para evitar divisiones raras.
+    """
+    x = np.asarray(x, dtype=np.float32).ravel()
+    if x.size == 0:
+        return 0.0
+    mu = x.mean()
+    std = x.std()
+    if std < 1e-8:
+        return 0.0
+    m3 = np.mean((x - mu) ** 3)
+    return float(m3 / (std**3 + 1e-8))
+
+def extraer_lbp_features(gray: np.ndarray, n_bins: int = 16) -> dict:
+    """
+    Calcula Local Binary Patterns (LBP) básicos sobre una imagen en gris.
+
+    Parámetros:
+        gray: imagen en escala de grises, shape (H, W), en [0,1] o [0,255].
+        n_bins: número de bins para el histograma comprimido (ej. 16).
+
+    Regresa:
+        dict con:
+            - lbp_hist_0 ... lbp_hist_(n_bins-1): histograma normalizado
+            - lbp_entropy: entropía del histograma LBP
+    """
+    gray = np.asarray(gray, dtype=np.float32)
+    if gray.max() <= 1.0:
+        gray = gray * 255.0
+
+    H, W = gray.shape
+    if H < 3 or W < 3:
+        # Imagen muy chiquita, devolvemos ceros para no tronar
+        return {f"lbp_hist_{i}": 0.0 for i in range(n_bins)} | {"lbp_entropy": 0.0}
+
+    # Ventana central
+    center = gray[1:-1, 1:-1]
+
+    # Vecinos 8-conectados (en orden horario)
+    n0 = gray[0:-2, 1:-1]   # arriba
+    n1 = gray[0:-2, 2:  ]   # arriba-der
+    n2 = gray[1:-1, 2:  ]   # der
+    n3 = gray[2:  , 2:  ]   # abajo-der
+    n4 = gray[2:  , 1:-1]   # abajo
+    n5 = gray[2:  , 0:-2]   # abajo-izq
+    n6 = gray[1:-1, 0:-2]   # izq
+    n7 = gray[0:-2, 0:-2]   # arriba-izq
+
+    codes = np.zeros_like(center, dtype=np.uint8)
+    neighbors = [n0, n1, n2, n3, n4, n5, n6, n7]
+
+    for bit, nb in enumerate(neighbors):
+        codes |= ((nb >= center).astype(np.uint8) << bit)
+
+    # Histograma comprimido a n_bins en rango 0-255
+    hist, _ = np.histogram(
+        codes.ravel(),
+        bins=n_bins,
+        range=(0, 256),
+        density=True
+    )
+
+    hist = hist.astype(np.float32)
+    eps = 1e-12
+    entropy = float(-(hist * np.log(hist + eps)).sum())
+
+    feats_lbp = {f"lbp_hist_{i}": float(hist[i]) for i in range(n_bins)}
+    feats_lbp["lbp_entropy"] = entropy
+
+    return feats_lbp
+
+def extraer_color_brillo_extras(H: np.ndarray, V: np.ndarray) -> dict:
+    """
+    A partir de H (tono) y V (brillo) en HSV, calcula:
+        - skewness del brillo
+        - ratio de pixeles oscuros
+        - ratio de pixeles muy brillantes
+        - ratio de pixeles de tonos cálidos
+    """
+    H = np.asarray(H, dtype=np.float32).ravel()
+    V = np.asarray(V, dtype=np.float32).ravel()
+
+    # Skewness del brillo
+    brillo_skew = skewness_1d(V)
+
+    # Ratios de brillo
+    dark_thresh = 0.3   # V < 0.3 = oscuro
+    bright_thresh = 0.7 # V > 0.7 = muy brillante
+
+    ratio_dark = float((V < dark_thresh).mean())
+    ratio_bright = float((V > bright_thresh).mean())
+
+    # Tonos cálidos:
+    # Consideramos warm ~ rojos/naranjas/amarillos:
+    # H en [0, 60/360] U [300/360, 1]
+    warm_low = 0.0
+    warm_high = 60.0 / 360.0
+    warm2_low = 300.0 / 360.0
+    warm2_high = 1.0
+
+    warm_mask = ((H >= warm_low) & (H <= warm_high)) | ((H >= warm2_low) & (H <= warm2_high))
+    ratio_warm = float(warm_mask.mean())
+
+    feats_color_extras = {
+        "brightness_skew": brillo_skew,
+        "ratio_dark": ratio_dark,
+        "ratio_bright": ratio_bright,
+        "ratio_warm": ratio_warm,
+    }
+    return feats_color_extras
 
 
 def extraer_caracteristicas(imagen):
@@ -344,6 +456,9 @@ def extraer_caracteristicas(imagen):
     std_S  = S.std()
     mean_V = V.mean()
     std_V  = V.std()
+
+
+    feats_color_extras = extraer_color_brillo_extras(H, V)
 
     #rms
     rms = contraste_rms_desde_rgb(rgb)
@@ -414,7 +529,7 @@ def extraer_caracteristicas(imagen):
         # Métricas: media y desviación estándar
         featsg[f"gabor_mean_abs_{name}"] = float(gabor_abs.mean())
         featsg[f"gabor_std_abs_{name}"] = float(gabor_abs.std())
-
+        feats_lbp = extraer_lbp_features(gray, n_bins=16)
     
     feats_luz = extraer_composicion_luz(gray, grid_size=3)
 
@@ -447,7 +562,8 @@ def extraer_caracteristicas(imagen):
 
     feats.update(featsg)
     feats.update(feats_luz)
-
+    feats.update(feats_lbp)
+    feats.update(feats_color_extras) 
 
     return feats
 
