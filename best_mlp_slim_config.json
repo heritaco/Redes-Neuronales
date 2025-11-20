@@ -1,0 +1,1 @@
+{"hidden_first": 32, "bottleneck": 32, "dropout_p": 0.3, "lr": 0.001, "weight_decay": 1e-05, "lambda_p": 1.0, "lambda_l": 1.0, "criterion_mode": "label_only_weighted"}

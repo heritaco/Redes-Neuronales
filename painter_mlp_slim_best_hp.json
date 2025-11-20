@@ -1,0 +1,12 @@
+{
+    "bottleneck": 24,
+    "hidden_first": 32,
+    "dropout_p": 0.4,
+    "lr": 0.0024555426586822136,
+    "weight_decay": 4.070640977962409e-05,
+    "criterion": "wce_ls",
+    "smoothing": 0.1,
+    "mean_score": 0.5990529672347854,
+    "std_score": 0.08813862644684843,
+    "gamma": NaN
+}
