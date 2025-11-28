@@ -1,0 +1,144 @@
+\documentclass[8pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{multicol}
+
+\geometry{margin= 2.5cm}
+
+% Configuración para código Python
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\tiny,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+\usepackage{fontspec}
+\setmainfont{EB Garamond}[
+    UprightFont = * Regular,
+    ItalicFont = * Italic,
+    BoldFont = * SemiBold,
+    BoldItalicFont = * SemiBold Italic,
+]
+
+
+% --- Espaciado ---
+\usepackage{setspace}
+\setstretch{1.2}
+\setlength{\parskip}{0.2em}
+
+
+\begin{document}
+
+\section{Graph Neural Networks}
+
+Una \emph{Graph Neural Network} (GNN) es un tipo de red neuronal diseñada para datos
+con estructura de grafo: nodos (por ejemplo, personas, átomos, ciudades) y enlaces
+entre ellos (amistades, enlaces químicos, carreteras, etc.).
+
+La idea clave es que cada nodo no se procesa aislado, sino teniendo en cuenta a sus
+vecinos en el grafo.
+
+\section{Intuición de funcionamiento}
+
+El proceso típico por capas es:
+
+\begin{enumerate}
+    \item Cada nodo empieza con un vector de características (edad, tipo de átomo, etc.).
+    \item En cada capa, el nodo recibe información resumida de sus vecinos
+    (por ejemplo, un promedio de sus vectores).
+    \item El nodo mezcla su propia información con la de sus vecinos y actualiza su vector.
+\end{enumerate}
+
+Tras varias capas, el vector de cada nodo captura tanto sus atributos como el contexto
+de su vecindario en el grafo.
+
+\section{Ventajas y desventajas}
+
+\subsection*{Ventajas}
+\begin{itemize}
+    \item Aprovechan explícitamente la estructura de conexiones entre entidades.
+    \item Funcionan en dominios muy distintos: redes sociales, química, recomendación, etc.
+    \item No dependen del orden en que numeramos los nodos.
+\end{itemize}
+
+\subsection*{Desventajas}
+\begin{itemize}
+    \item Pueden ser costosas en grafos muy grandes (problemas de memoria y tiempo).
+    \item Muchas capas pueden hacer que los nodos se parezcan demasiado entre sí
+    (sobre-suavizado).
+    \item El diseño e implementación son más complejos que en redes totalmente conectadas
+    o convolucionales básicas.
+\end{itemize}
+
+\section{Conclusión}
+
+Las GNNs extienden las redes neuronales al caso en que la estructura de relaciones
+entre los datos es tan importante como las características individuales.
+Son muy útiles cuando el ``con quién estás conectado'' importa tanto como ``quién eres''. Una GNN aprende representaciones de nodos usando su información y la de sus vecinos en un grafo.
+
+\newpage
+
+\section{¿Qué es una Red Bayesiana?}
+
+Una \emph{Red Bayesiana} es un modelo probabilístico que representa un conjunto
+de variables y sus dependencias mediante un grafo dirigido sin ciclos.
+
+\begin{itemize}
+    \item Cada nodo = una variable (por ejemplo, enfermedad, síntoma, lluvia).
+    \item Cada flecha = relación de dependencia causal o probabilística.
+    \item Cada nodo tiene una tabla de probabilidades condicionadas a sus ``padres''.
+\end{itemize}
+
+La idea central es combinar teoría de probabilidad y estructura de grafo para
+razonar con incertidumbre.
+
+\section{Intuición de funcionamiento}
+
+\begin{enumerate}
+    \item Se construye el grafo indicando qué variable influye en cuál.
+    \item A cada nodo se le asignan probabilidades condicionales (por ejemplo,
+    probabilidad de fiebre dado que hay gripe).
+    \item Dado un conjunto de evidencias (variables observadas), se actualizan
+    las probabilidades de las demás variables usando la regla de Bayes.
+\end{enumerate}
+
+Así, la red permite contestar preguntas del tipo: ``dado lo que observo,
+¿cuán probable es cada hipótesis?''.
+
+\section{Ventajas y desventajas}
+
+\subsection*{Ventajas}
+\begin{itemize}
+    \item Modelo explícito y gráfico de dependencias (muy interpretable).
+    \item Manejan bien la incertidumbre y datos faltantes.
+    \item Permiten combinar conocimiento experto y datos para aprender parámetros.
+\end{itemize}
+
+\subsection*{Desventajas}
+\begin{itemize}
+    \item Diseñar la estructura del grafo puede ser difícil en problemas grandes.
+    \item Inferencia exacta puede ser muy costosa en redes complejas.
+    \item Aprender estructura automáticamente requiere muchos datos y es computacionalmente caro.
+\end{itemize}
+
+\section{Conclusión}
+
+Las Redes Bayesianas son una herramienta potente para modelar y razonar con
+incertidumbre cuando existen relaciones causales o de dependencia claras
+entre variables. Son especialmente útiles cuando, además de predecir,
+queremos \emph{explicar} y \emph{entender} el comportamiento del sistema. Una Red Bayesiana modela dependencias probabilísticas entre variables mediante un grafo dirigido.
+
+\end{document}

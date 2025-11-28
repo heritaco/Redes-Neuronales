@@ -1,0 +1,156 @@
+\documentclass[8pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{multicol}
+
+\geometry{margin= 2.5cm}
+
+% Configuración para código Python
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\tiny,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!60!black},
+    stringstyle=\color{red},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10}
+}
+
+\usepackage{fontspec}
+\setmainfont{EB Garamond}[
+    UprightFont = * Regular,
+    ItalicFont = * Italic,
+    BoldFont = * SemiBold,
+    BoldItalicFont = * SemiBold Italic,
+]
+
+
+% --- Espaciado ---
+\usepackage{setspace}
+\setstretch{1.2}
+\setlength{\parskip}{0.2em}
+
+\begin{document}
+
+% Portada personalizada
+\begin{titlepage}
+    \centering
+    \vspace*{1cm}
+    
+    {\LARGE\textbf{Universidad de las Américas Puebla}}\\[0.5cm]
+    {\large UDLAP}\\[2cm]
+    
+    {\Huge\textbf{Clasificación de Imágenes según Corrientes Artísticas}}\\[0.8cm]
+    
+    {\large\textbf{Autores:}}\\[0.3cm]
+    {\large
+        Erick Walter Trejo Durán\\
+        Heriberto Espino Montelongo\\
+        Nuria Arroyo Bustamante
+    }\\[2cm]
+    
+    {\large\textbf{Materia:}}\\[0.2cm]
+    {\large Redes Neuronales}\\[1cm]
+    
+    {\large\textbf{Profesor:}}\\[0.2cm]
+    {\large Héctor Saib Maravillo Gómez}\\[2cm]
+    
+    \vfill
+    
+    {\large \today}
+    
+\end{titlepage}
+
+\newpage
+
+\section{Objetivo}
+
+El objetivo es crear un sistema que pueda clasificar automáticamente pinturas en sus corrientes artísticas usando redes neuronales. Queremos que la computadora aprenda a reconocer si una obra es Impresionista, Cubista, Expresionista Abstracta, Barroca o Surrealista. Trabajamos con un dataset de 200 imágenes distribuidas en estos 5 géneros: Impresionismo (75), Surrealismo (50), Barroco (30), Cubismo (30) y Expresionismo abstracto (15).
+
+\section{Metodología}
+
+\subsection{Preprocesamiento y Extracción de Características}
+
+Primero preparamos las imágenes normalizando los valores de píxeles de [0, 255] a [0, 1] y redimensionándolas a un tamaño estándar. Luego extraemos las diferentes características por imagen que capturan diferentes aspectos visuales:
+
+\textbf{Color RGB:} Media, desviación estándar, mínimos y máximos de cada canal. El Barroco tiende a paletas oscuras, mientras que el Impresionismo es más claro.
+
+\textbf{Saturación y brillo (HSV):} Obras con saturación alta (Expresionismo abstracto) son muy intensas, mientras que paletas apagadas tienen valores bajos.
+
+\textbf{Contraste (RMS):} El Barroco con su tenebrismo tiene contraste alto, mientras que el Impresionismo es más suave.
+
+\textbf{Textura:} Filtros Sobel (bordes), Laplaciano (detalles finos) y Gabor en 4 orientaciones capturan el estilo de pincelada. El Cubismo tiene bordes definidos, el Impresionismo es difuso.
+
+\textbf{Composición luminosa:} Dividimos la imagen en rejilla 3×3 y analizamos dónde está la luz. El Barroco tiene foco central luminoso con fondo oscuro; el Impresionismo tiene luz homogénea.
+
+\textbf{Entropía:} Mide el caos visual. Pollock tiene entropía alta, estilos controlados tienen valores bajos.
+
+\textbf{LBP:} Captura textura microscópica de la pincelada, distinguiendo superficies lisas de empastes marcados.
+
+Al final, cada imagen queda como vector $x\in\mathbb{R}^d$ donde $d\approx70$.
+
+\subsection{Manejo del Desbalanceo}
+
+Debido a que el dataset está desbalanceado. se empleó un método de sobremuestreo sintético, en el caso de la RBF se utiliza \emph{SMOTE} para generar ejemplos de clases minoritarias. Para la MLP se calcula peso balanceado por clase: $w_c=\frac{N}{P\,n_c}$ donde $N$ es total de muestras, $P$ número de clases y $n_c$ muestras de clase $c$. Esto solo se hace en entrenamiento; los datos de prueba se mantienen originales.
+
+\subsection{Arquitectura de las Redes Neuronales}
+
+\textbf{MLP (Multi-Layer Perceptron):} Red con capas totalmente conectadas. Arquitectura estrecha para controlar sobreajuste:
+\[
+x \xrightarrow{\text{Linear}(d\to h)} \text{BN} \xrightarrow{\text{ReLU}} \text{Dropout}(p)
+\xrightarrow{\text{Linear}(h\to b)} \tanh \xrightarrow{\text{Dropout}(p)}
+\xrightarrow{\text{Linear}(b\to P)} z
+\]
+
+Donde $h$ es el ancho de primera capa, $b$ es el cuello de botella (dimensión latente compacta que fuerza a aprender factores globales), $p$ es probabilidad de dropout, y $P=5$ clases. El cuello de botella reduce capacidad ($b\ll h$) para evitar sobreajuste. Usamos BatchNorm para estabilidad y dropout alto para regularización.
+
+\textbf{Función de pérdida:} Entropía cruzada ponderada $\mathcal{L}_{\text{WCE}}(z,y)= - w_{y}\,\log(\text{softmax}(z)_y)$. También probamos label smoothing y focal loss.
+
+\textbf{Optimización:} AdamW con learning rate y weight decay como hiperparámetros. Early stopping monitoreando macro-F1 en validación: $\hat{\theta}=\arg\max_{\theta} \text{F1}_{\text{macro,val}}(\theta)$.
+
+\textbf{Validación cruzada:} StratifiedKFold con $K=5$ folds para preservar proporciones de clase. Para cada configuración de hiperparámetros promediamos: $S(\text{hp})=\frac{1}{K}\sum_{k=1}^K \text{F1}_{\text{macro},k}$.
+
+\textbf{Búsqueda de hiperparámetros:} RandomizedSearchCV explorando: \texttt{hidden\_first}$\in\{16,32,48,64\}$, \texttt{bottleneck}$\in\{8,12,16,24\}$, $p\in\{0.2,\dots,0.6\}$, lr$\sim\log U(10^{-4},3\cdot10^{-3})$, weight\_decay$\sim\log U(10^{-6},3\cdot10^{-4})$.
+
+El mejor MLP alcanzó accuracy de 0.735 ± 0.03 en validación cruzada en la clasificación por artistas.
+
+\textbf{SVM con kernel RBF:} Clasificador de vectores de soporte con kernel de base radial, muy efectivo en espacios de alta dimensión. Optimizamos hiperparámetros C y $\gamma$ con GridSearchCV (más eficiente que RandomSearch al tener solo 2 parámetros). Este modelo fue el más estable, con accuracy de 0.785 ± 0.02 en validación cruzada.
+
+\textbf{Bagging:} Entrenamos varios modelos independientes cambiando la semilla. En inferencia promediamos logits: $\bar{z}(x)=\frac{1}{M}\sum_{m=1}^M z_m(x)$, $\hat{y}(x)=\arg\max_c \bar{z}_c(x)$. Esto reduce varianza y mejora generalización.
+
+\section{Resultados}
+
+Comparamos tres modelos finales: (1) SVM RBF balanceado, (2) Bagging MLP optimizado, y (3) Bagging SVM.
+
+El \textbf{SVM RBF balanceado} mostró el mejor equilibrio entre desempeño y estabilidad. Obteniendo un accuracy de 0.82 y un F1-macro de 0.80 en el conjunto de prueba, indicando alta consistencia del modelo. Los géneros más fáciles de clasificar fueron Barroco, Impresionismo y Expresionismo abstracto (F1 $\geq$ 0.90), porque tienen características visuales muy distintivas. El Cubismo fue el más difícil, porque comparte elementos geométricos con otros estilos.
+
+La validación cruzada estratificada confirmó consistencia (std = 0.02), indicando que el modelo no depende de un split afortunado. Esto es crucial con solo 200 imágenes.
+
+El \textbf{Bagging SVM} alcanzó la mejor métrica puntual en prueba (accuracy $\approx$ 0.85, F1-macro $\approx$ 0.86), pero la validación cruzada reveló mayor varianza (std $\approx$ 0.064) y menor desempeño promedio, sugiriendo sensibilidad al muestreo y posible sobreajuste al split de prueba.
+
+Los \textbf{Bagging MLP Optimizado} obtuvieron métricas con accuracy $\approx$ 0.70 y F1-macro $\approx$ 0.70 para la clasificación por pintor, pero mostraban mayor inestabilidad (std $\approx$ 0.03) y tendencia a sobreajustar, probablemente por la complejidad del modelo y el tamaño limitado del dataset. Se aplicó bagging y, luego de traducir a corriente artística, se logró accuracy $\approx$ 0.95 y F1-macro $\approx$ 0.956.
+
+\section{Evaluación}
+
+Usamos Accuracy (porcentaje de predicciones correctas) y F1-Score (balancea precisión y recall, útil con clases desbalanceadas). Las matrices de confusión mostraron que el modelo a veces confunde Cubismo con otros estilos por similitudes visuales de la obra.
+
+\section{Conclusiones}
+
+El proyecto demuestra que es posible clasificar corrientes artísticas con precisión razonable. El \textbf{Bagging MLP Optimizado} es el modelo final seleccionado por ofrecer el mejor equilibrio entre rendimiento (95\% accuracy en 5 clases, azar daría 20\%), estabilidad y capacidad de generalización.
+
+Los géneros con características distintivas (Barroco con claroscuro dramático, Impresionismo con colores vivos) son más fáciles de clasificar. El Cubismo presenta desafíos por similitudes con otros estilos.
+
+Las limitaciones principales son el tamaño del dataset (200 imágenes) y que usamos features hechas a mano. El modelo parece haber alcanzado un "techo" natural con estos datos.
+
+Mejoras futuras: (1) más imágenes, (2) CNNs pre-entrenadas que extraen features automáticamente.
+
+\end{document}
